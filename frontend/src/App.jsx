@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { supabase } from "./supabase";
 
 // ── Theme ─────────────────────────────────────────────────────
 const DARK = {
@@ -519,33 +518,79 @@ function NoteEditor({ note, onUpdate, onClose, onAI, aiLoading, isDark, NEON, on
 }
 
 // ── Auth Modal ────────────────────────────────────────────────
-function AuthModal({ accent, onClose, isDark, onSignIn }) {
+function AuthModal({ accent, onClose, isDark, onAuthSuccess, onToast }) {
   const T = isDark ? DARK : LIGHT;
-  async function signInGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
-    if (error) alert(error.message);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!email || !password) return setErr("Email & Password are required");
+    if (isSignUp && !name) return setErr("Name is required");
+
+    setLoading(true);
+    setErr("");
+    try {
+      const endpoint = isSignUp ? "/auth/register" : "/auth/login";
+      const body = isSignUp ? { email, password, name } : { email, password };
+      
+      const res = await fetch(`http://localhost:5001/api${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Authentication failed");
+      }
+
+      onAuthSuccess(data.token, data.user);
+      onToast(isSignUp ? "✨ Account created successfully!" : "🔑 Signed in successfully!");
+      onClose();
+    } catch (err) {
+      setErr(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
-  async function signInApple() {
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "apple" });
-    if (error) alert(error.message);
-  }
+
   return (
     <div style={{ position:"fixed",inset:0,background:isDark?"#000000dd":"#00000055",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(8px)" }}>
-      <div style={{ background:T.sidebar,border:`1px solid ${accent}40`,borderRadius:20,padding:"40px 36px",width:340,boxShadow:`0 0 60px ${accent}20`,fontFamily:"'DM Mono',monospace",textAlign:"center" }}>
+      <div style={{ background:T.sidebar,border:`1px solid ${accent}40`,borderRadius:20,padding:"36px 32px",width:340,boxShadow:`0 0 60px ${accent}20`,fontFamily:"'DM Mono',monospace",textAlign:"center" }}>
         <div style={{ fontSize:32,marginBottom:12 }}>⚡</div>
         <div style={{ fontSize:14,color:accent,letterSpacing:3,marginBottom:6,textShadow:isDark?`0 0 12px ${accent}`:"none" }}>NEONNOTES</div>
-        <div style={{ fontSize:10,color:T.subtext,letterSpacing:2,marginBottom:32 }}>SIGN IN TO SYNC YOUR NOTES</div>
-        <button onClick={signInGoogle}
-          style={{ width:"100%",padding:"13px 0",background:"transparent",border:`1px solid ${isDark?"#333":"#ddd"}`,borderRadius:12,color:T.text,cursor:"pointer",fontFamily:"inherit",fontSize:12,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:12,transition:"all 0.2s" }}>
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.8 2.2 30.3 0 24 0 14.6 0 6.6 5.6 2.7 13.8l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17z"/><path fill="#FBBC05" d="M10.6 28.6A14.9 14.9 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6l-7.9-6.1A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.6l8.1-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.2 1.5-5 2.3-8.4 2.3-6.2 0-11.5-4.2-13.4-9.9l-8.1 6C6.6 42.4 14.6 48 24 48z"/></svg>
-          Continue with Google
-        </button>
-        <button onClick={signInApple}
-          style={{ width:"100%",padding:"13px 0",background:isDark?"#fff":"#000",border:"none",borderRadius:12,color:isDark?"#000":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:12,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:24,transition:"all 0.2s" }}>
-          <svg width="18" height="18" viewBox="0 0 814 1000" fill={isDark?"#000":"#fff"}><path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-54.2-155.5-127.5C46.7 790.7 0 663.8 0 541.8c0-203.1 132.4-310.3 261.7-310.3 61.2 0 111.9 40.2 149.9 40.2 36 0 92.7-42.8 161.3-42.8 25.8 0 111.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z"/></svg>
-          Continue with Apple
-        </button>
-        <button onClick={onClose} style={{ background:"transparent",border:"none",color:T.subtext,cursor:"pointer",fontSize:11,fontFamily:"inherit",letterSpacing:2 }}>MAYBE LATER</button>
+        <div style={{ fontSize:10,color:T.subtext,letterSpacing:2,marginBottom:24 }}>{isSignUp ? "CREATE NEW ACCOUNT" : "SIGN IN TO SYNC YOUR NOTES"}</div>
+        
+        <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          {isSignUp && (
+            <input type="text" placeholder="NAME" value={name} onChange={e=>setName(e.target.value)}
+              style={{ width:"100%", background:T.inputBg, border:`1px solid ${accent}30`, borderRadius:10, padding:"12px 16px", color:T.text, fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+          )}
+          <input type="email" placeholder="EMAIL" value={email} onChange={e=>setEmail(e.target.value)}
+            style={{ width:"100%", background:T.inputBg, border:`1px solid ${accent}30`, borderRadius:10, padding:"12px 16px", color:T.text, fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+          <input type="password" placeholder="PASSWORD" value={password} onChange={e=>setPassword(e.target.value)}
+            style={{ width:"100%", background:T.inputBg, border:`1px solid ${accent}30`, borderRadius:10, padding:"12px 16px", color:T.text, fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+          
+          {err && <div style={{ color:"#ff2d78", fontSize:11, textAlign:"center" }}>{err}</div>}
+          
+          <button type="submit" disabled={loading}
+            style={{ width:"100%", padding:"13px 0", background:`${accent}18`, border:`1px solid ${accent}`, borderRadius:12, color:accent, cursor:"pointer", fontFamily:"inherit", fontSize:11, letterSpacing:1.5, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", marginTop:8 }}>
+            {loading ? "PROCESSING..." : isSignUp ? "CREATE ACCOUNT" : "SIGN IN"}
+          </button>
+        </form>
+
+        <div style={{ marginTop:20, display:"flex", flexDirection:"column", gap:12 }}>
+          <button onClick={() => { setIsSignUp(!isSignUp); setErr(""); }}
+            style={{ background:"transparent", border:"none", color:accent, cursor:"pointer", fontSize:10, fontFamily:"inherit", letterSpacing:1 }}>
+            {isSignUp ? "ALREADY HAVE AN ACCOUNT? SIGN IN" : "DON'T HAVE AN ACCOUNT? SIGN UP"}
+          </button>
+          <button onClick={onClose} style={{ background:"transparent", border:"none", color:T.subtext, cursor:"pointer", fontSize:10, fontFamily:"inherit", letterSpacing:2 }}>MAYBE LATER</button>
+        </div>
       </div>
     </div>
   );
@@ -561,35 +606,88 @@ export default function App() {
   const [isDark, setIsDark] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
   const NEON = isDark ? DARK_NEON : LIGHT_NEON;
   const T = isDark ? DARK : LIGHT;
 
-  // ── Auth listener ──
+  // ── Auth verification ──
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    async function verifyToken() {
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        } else {
+          localStorage.removeItem("token");
+          setToken(null);
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Token verification failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    verifyToken();
+  }, [token]);
 
   // ── Fetch notes ──
-  useEffect(() => { fetchNotes(); }, [user]);
+  useEffect(() => {
+    fetchNotes();
+  }, [user, token]);
 
   async function fetchNotes() {
     setLoading(true);
-    const query = supabase.from("notes").select("*").order("created_at", { ascending: false });
-    if (user) query.eq("user_id", user.id);
-    const { data, error } = await query;
-    if (!error && data) setNotes(data);
+    if (user && token) {
+      try {
+        const res = await fetch(`${API_URL}/notes`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setNotes(data);
+        } else {
+          showToast("❌ Could not fetch notes from server");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("❌ Server connection failed");
+      }
+    } else {
+      const local = localStorage.getItem("neonnotes_local_notes");
+      if (local) {
+        try {
+          setNotes(JSON.parse(local));
+        } catch {
+          setNotes([]);
+        }
+      } else {
+        setNotes([]);
+      }
+    }
     setLoading(false);
   }
 
-  // ── CRUD — fixed: no nested function, all ops sync to Supabase ──
+  function saveNotesLocally(updatedNotes) {
+    localStorage.setItem("neonnotes_local_notes", JSON.stringify(updatedNotes));
+  }
+
+  // ── CRUD operations using Express Backend ──
   async function addNote() {
     const newNote = {
+      id: uid(),
       title: "New Note",
       blocks: [makeTextBlock()],
       summary: null,
@@ -597,23 +695,79 @@ export default function App() {
       locked: false,
       pin: null,
       font_size: 13,
-      ...(user ? { user_id: user.id } : {}),
     };
-    const { data, error } = await supabase.from("notes").insert([newNote]).select();
-    if (error) { showToast("❌ Could not create note"); console.error(error); return; }
-    if (data?.[0]) { setNotes(prev => [data[0], ...prev]); setActiveId(data[0].id); }
+
+    if (user && token) {
+      try {
+        const res = await fetch(`${API_URL}/notes`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(newNote),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setNotes(prev => [created, ...prev]);
+          setActiveId(created.id);
+        } else {
+          showToast("❌ Could not create note on server");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("❌ Connection error");
+      }
+    } else {
+      const updated = [newNote, ...notes];
+      setNotes(updated);
+      saveNotesLocally(updated);
+      setActiveId(newNote.id);
+    }
   }
 
   async function updateNote(id, patch) {
     // Optimistic update
-    setNotes(prev => prev.map(n => n.id === id ? { ...n, ...patch } : n));
-    await supabase.from("notes").update(patch).eq("id", id);
+    const updatedNotes = notes.map(n => n.id === id ? { ...n, ...patch } : n);
+    setNotes(updatedNotes);
+
+    if (user && token) {
+      try {
+        await fetch(`${API_URL}/notes/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(patch),
+        });
+      } catch (err) {
+        console.error("Update failed:", err);
+      }
+    } else {
+      saveNotesLocally(updatedNotes);
+    }
   }
 
   async function deleteNote(id) {
-    setNotes(prev => prev.filter(n => n.id !== id));
+    const updatedNotes = notes.filter(n => n.id !== id);
+    setNotes(updatedNotes);
     if (activeId === id) setActiveId(null);
-    await supabase.from("notes").delete().eq("id", id);
+
+    if (user && token) {
+      try {
+        await fetch(`${API_URL}/notes/${id}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (err) {
+        console.error("Delete failed:", err);
+      }
+    } else {
+      saveNotesLocally(updatedNotes);
+    }
   }
 
   async function aiSummarize(id) {
@@ -622,15 +776,38 @@ export default function App() {
     if (!text) return showToast("✍️ Write something first!");
     setAiLoading(id);
     try {
-      const res = await fetch("YOUR_BACKEND_URL/summarize", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await fetch(`${API_URL}/summarize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "AI summary failed");
+      }
       const data = await res.json();
       await updateNote(id, { summary: data.summary });
       showToast("✨ Summary ready!");
-    } catch { showToast("❌ AI error — check your backend URL"); }
-    finally { setAiLoading(null); }
+    } catch (err) {
+      showToast(`❌ AI error — ${err.message}`);
+    } finally {
+      setAiLoading(null);
+    }
+  }
+
+  function handleAuthSuccess(newToken, newUser) {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    setUser(newUser);
+  }
+
+  function handleSignOut() {
+    localStorage.removeItem("token");
+    setToken(null);
+    setUser(null);
+    setNotes([]);
+    setActiveId(null);
+    showToast("👤 Logged out successfully");
   }
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2500); }
@@ -662,7 +839,15 @@ export default function App() {
         textarea{overflow:hidden;}
       `}</style>
 
-      {showAuth && <AuthModal accent={globalAccent} isDark={isDark} onClose={() => setShowAuth(false)} />}
+      {showAuth && (
+        <AuthModal
+          accent={globalAccent}
+          isDark={isDark}
+          onClose={() => setShowAuth(false)}
+          onAuthSuccess={handleAuthSuccess}
+          onToast={showToast}
+        />
+      )}
 
       <div style={{ width:"100vw",height:"100vh",background:T.bg,display:"flex",fontFamily:"'DM Mono',monospace",overflow:"hidden",transition:"background 0.4s" }}>
         <div style={{ position:"fixed",width:700,height:700,borderRadius:"50%",background:`radial-gradient(circle,${globalGlow} 0%,transparent 70%)`,top:"10%",left:"35%",pointerEvents:"none",transition:"background 0.6s",zIndex:0 }} />
@@ -720,10 +905,10 @@ export default function App() {
                 </div>
               </button>
             </div>
-            <button onClick={()=>setShowAuth(true)}
+            <button onClick={user ? handleSignOut : ()=>setShowAuth(true)}
               style={{ width:"100%",padding:"10px 0",background:isDark?`${globalAccent}10`:"#f5f5f5",border:`1px solid ${globalAccent}30`,borderRadius:10,color:globalAccent,fontSize:10,fontFamily:"inherit",cursor:"pointer",letterSpacing:1.5,display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"all 0.2s" }}>
               <span style={{ fontSize:15 }}>{user?"👤":"🔑"}</span>
-              {user ? (user.user_metadata?.name||user.email||"ACCOUNT").toUpperCase() : "SIGN IN / ACCOUNT"}
+              {user ? `SIGN OUT (${(user.name||user.email||"ACCOUNT").toUpperCase()})` : "SIGN IN / ACCOUNT"}
             </button>
             <div style={{ fontSize:9,color:T.dim,letterSpacing:1,textAlign:"center" }}>{notes.length} NOTE{notes.length!==1?"S":""}</div>
           </div>
