@@ -1,8 +1,9 @@
 services:
+  # Backend API Server
   - type: web
     name: neonnotes-backend
-    runtime: node
-    repo: https://github.com/arin-arora/neonnotes
+    env: node
+    plan: free
     rootDir: backend
     buildCommand: npm install
     startCommand: npm start
@@ -13,3 +14,18 @@ services:
         generateValue: true
       - key: GEMINI_API_KEY
         sync: false
+
+  # Frontend React Client
+  - type: web
+    name: neonnotes-frontend
+    env: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: neonnotes-backend
+          type: web
+          property: url

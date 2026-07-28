@@ -6,29 +6,22 @@ A premium, highly interactive neon-themed notes application powered by Express, 
 
 ## 🚀 One-Click Production Deployment
 
-Deploy the application permanently to the cloud and get a public domain URL for free in minutes!
+Deploy the **entire application** permanently to the cloud with a single click and get free public domains for both frontend and backend!
 
-### Step 1: Deploy the Backend (Render)
-Deploy your Express server and connect it to MongoDB Atlas.
+### Deploy to Render (Frontend + Backend)
+
+Click the button below to start the unified deployment process:
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/arin-arora/neonnotes)
 
-*During deployment, Render will ask you for:*
-- `MONGO_URI`: `mongodb+srv://arin098arora_db_user:AarohiCheat2907@cluster0.lde9fs3.mongodb.net/neonnotes?retryWrites=true&w=majority&appName=Cluster0`
-- `GEMINI_API_KEY`: *Your Google AI Studio API key*
-- *`JWT_SECRET` is automatically generated for you.*
+*During deployment, Render will automatically spin up:*
+1. **`neonnotes-backend`** (Node/Express API server)
+2. **`neonnotes-frontend`** (Vite/React Static Client)
 
-*Once deployed, copy your backend's Render URL (e.g., `https://neonnotes-backend.onrender.com`).*
-
----
-
-### Step 2: Deploy the Frontend (Vercel)
-Deploy your React application and hook it up to your backend.
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Farin-arora%2Fneonnotes&root-directory=frontend&env=VITE_API_URL)
-
-*During deployment, Vercel will ask you for:*
-- `VITE_API_URL`: `https://YOUR_RENDER_BACKEND_URL/api` (e.g., `https://neonnotes-backend-xyz.onrender.com/api`)
+*And Render will prompt you for:*
+- **`MONGO_URI`**: `mongodb+srv://arin098arora_db_user:AarohiCheat2907@cluster0.lde9fs3.mongodb.net/neonnotes?retryWrites=true&w=majority&appName=Cluster0`
+- **`GEMINI_API_KEY`**: *Your active Gemini API key from Google AI Studio*
+- *Note: `JWT_SECRET` will be automatically generated for you, and Render will automatically link the frontend to the backend API!*
 
 ---
 

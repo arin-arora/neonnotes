@@ -609,7 +609,10 @@ export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+  let API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+  if (API_URL && !API_URL.endsWith("/api") && API_URL.startsWith("http")) {
+    API_URL = `${API_URL}/api`;
+  }
 
   const NEON = isDark ? DARK_NEON : LIGHT_NEON;
   const T = isDark ? DARK : LIGHT;
