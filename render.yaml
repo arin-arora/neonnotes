@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: neonnotes-backend
+    runtime: node
+    repo: https://github.com/arin-arora/neonnotes
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
